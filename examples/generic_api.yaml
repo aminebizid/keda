@@ -1,0 +1,16 @@
+apiVersion: keda.k8s.io/v1alpha1
+kind: ScaledObject
+metadata:
+  name: generic-api-scaledobject
+  namespace: hpa
+  labels:
+    deploymentName: consumer
+spec:
+  scaleTargetRef:
+    deploymentName: consumer
+  triggers:
+  - type: generic-api
+    metadata:
+      # Required
+      endpoint: http://test.com
+      targetMetricValue: "20"

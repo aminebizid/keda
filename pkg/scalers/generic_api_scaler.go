@@ -10,14 +10,13 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/metrics/pkg/APIs/external_metrics"
+	"k8s.io/metrics/pkg/apis/external_metrics"
 )
 
 const (
-	genericAPIMetricName     = "targetMetricValue"
-	defaultTargetMetricValue = 5
-	externalMetricType       = "External"
-	defaultConnectionSetting = "AzureWebJobsStorage"
+	genericAPIMetricName      = "targetMetricValue"
+	defaultTargetMetricValue  = 5
+	genericExternalMetricType = "External"
 )
 
 type genericAPIScaler struct {
@@ -36,19 +35,19 @@ func NewGenericAPIScaler(resolvedEnv, metadata map[string]string) (Scaler, error
 		return nil, fmt.Errorf("error parsing generic Api metadata: %s", err)
 	}
 
-	return &genericApiScaler{
+	return &genericAPIScaler{
 		metadata: meta,
 	}, nil
 }
 
-func parseGenericAPIMetadata(metadata, resolvedEnv map[string]string) (*genericApiMetadata, error) {
-	meta := genericApiMetadata{}
+func parseGenericAPIMetadata(metadata, resolvedEnv map[string]string) (*genericAPIMetadata, error) {
+	meta := genericAPIMetadata{}
 	meta.targetMetricValue = defaultTargetMetricValue
 
-	if val, ok := metadata[genericApiMetricName]; ok {
+	if val, ok := metadata[genericAPIMetricName]; ok {
 		targetMetricValue, err := strconv.Atoi(val)
 		if err != nil {
-			log.Errorf("Error parsing generi Api metadata %s: %s", genericApiMetricName, err)
+			log.Errorf("Error parsing generi Api metadata %s: %s", genericAPIMetricName, err)
 		} else {
 			meta.targetMetricValue = targetMetricValue
 		}
@@ -65,7 +64,7 @@ func parseGenericAPIMetadata(metadata, resolvedEnv map[string]string) (*genericA
 
 // GetScaleDecision is a func
 func (s *genericAPIScaler) IsActive(ctx context.Context) (bool, error) {
-	length, err := GetGenericApiMetric(ctx, s.metadata.endpoint)
+	length, err := GetGenericAPIMetric(ctx, s.metadata.endpoint)
 
 	if err != nil {
 		log.Errorf("error %s", err)
@@ -82,13 +81,13 @@ func (s *genericAPIScaler) Close() error {
 func (s *genericAPIScaler) GetMetricSpecForScaling() []v2beta1.MetricSpec {
 	targetMetricQty := resource.NewQuantity(int64(s.metadata.targetMetricValue), resource.DecimalSI)
 	externalMetric := &v2beta1.ExternalMetricSource{MetricName: genericAPIMetricName, TargetAverageValue: targetMetricQty}
-	metricSpec := v2beta1.MetricSpec{External: externalMetric, Type: externalMetricType}
+	metricSpec := v2beta1.MetricSpec{External: externalMetric, Type: genericExternalMetricType}
 	return []v2beta1.MetricSpec{metricSpec}
 }
 
 //GetMetrics returns value for a supported metric and an error if there is a problem getting the metric
 func (s *genericAPIScaler) GetMetrics(ctx context.Context, metricName string, metricSelector labels.Selector) ([]external_metrics.ExternalMetricValue, error) {
-	metricValue, err := GetGenericApiMetric(ctx, s.metadata.endpoint)
+	metricValue, err := GetGenericAPIMetric(ctx, s.metadata.endpoint)
 
 	if err != nil {
 		log.Errorf("error getting metric value %s", err)
